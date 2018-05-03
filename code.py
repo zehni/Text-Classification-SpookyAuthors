@@ -39,6 +39,11 @@ def plotInitialData(data):
     plt.bar(authors, byAuthor.count()['text'])
     plt.show()
 
+# Plot initial data as bar graph. (Now it's working)
+def plotInitialData2(data):
+    data.author.value_counts().plot(kind='bar', rot=0)
+    plt.show()
+
 # Encode the authots 'EAP': 0, 'HPL': 1, 'MWS': 2
 def encodeAuthors(data):
     data['author'] = data['author'].map({'EAP': 0, 'HPL': 1, 'MWS': 2})
