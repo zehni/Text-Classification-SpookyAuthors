@@ -71,10 +71,7 @@ def countvecTransform(train_data, data):
     # You need to fit and the transform the test data again
     # To transform the data to be predicted in the same way
     fit = count_vect.fit_transform(train_data)
-    transform = []
-    # Transform sentence by count vec
-    for sentences in data:
-        transform.append(count_vect.transform([sentences]))
+    transform = count_vect.transform(data)
     return transform
 # Multinomial Naive Baysen Classifer
 def MultinomialNaiveBaysen(X_train_tfidf, y_train, train_data, data):
@@ -89,10 +86,8 @@ def MultinomialNaiveBaysen(X_train_tfidf, y_train, train_data, data):
     '''
     model = MultinomialNB().fit(X_train_tfidf, y_train)
     transform = countvecTransform(train_data, data)
-    prediction = []
     # Predict the authors of the sentences
-    for counts in transform:
-        prediction.append(model.predict(counts)[0])
+    prediction = model.predict(transform)
     return prediction
 
 # Linear Suport Vector Machine Classifer
@@ -101,14 +96,12 @@ def LinearSVM(X_train_tfidf, X_train, y_train, X_test, penality=1):
     model = svm.LinearSVC(C=penality)
     model.fit(X_train_tfidf, y_train)
     X_test_transform = countvecTransform(X_train, X_test)
-    prediction=[]
-    for sentences in X_test_transform:
-        prediction.append(model.predict(sentences)[0])
+    prediction= model.predict(X_test_transform)
     return prediction
 
 
 data = getData('train.csv')
-# plot = plotInitialData(data)
+plot = plotInitialData(data)
 
 encoded_data = encodeAuthors(data)
 X_train, X_test, y_train, y_test = splitData(encoded_data)
