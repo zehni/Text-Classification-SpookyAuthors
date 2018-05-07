@@ -63,12 +63,12 @@ def stemWords(text):
 
 # Count vectorizer for the train data
 def countVec(x_train):
-    count_vect = CountVectorizer(stop_words='english', 
-                                 token_pattern="\w*[a-z]\w*", 
+    count_vect = CountVectorizer(stop_words='english',
+                                 token_pattern="\w*[a-z]\w*",
                                  max_features=2000,
                                  analyzer=stemWords)
     x_train_counts = count_vect.fit_transform(x_train)
-    
+
     return x_train_counts
 
 # TF-IDF values based on the count vectorizer
@@ -107,17 +107,9 @@ def MultinomialNaiveBaysen(x_train_tfidf, y_train, train_data, data):
 # Penality by default is 1
 def LinearSVM(x_train_tfidf, x_train, y_train, x_test, penality=1):
     model = svm.LinearSVC(C=penality)
-<<<<<<< HEAD
     model.fit(X_train_tfidf, y_train)
     X_test_transform = countvecTransform(X_train, X_test)
     prediction= model.predict(X_test_transform)
-=======
-    model.fit(x_train_tfidf, y_train)
-    x_test_transform = countvecTransform(x_train, x_test)
-    prediction=[]
-    for sentences in x_test_transform:
-        prediction.append(model.predict(sentences)[0])
->>>>>>> 65e82186ca845f31791c063680588398758847a8
     return prediction
 
 data = getData('train.csv')
@@ -135,7 +127,7 @@ tfidf_transformation = tfidfTransform(count_vectorizer)
 
 """ Proposed change. """
 
-""" 
+"""
 Why not just call countVec() for x_test and transform the test data that way?
 I don't think it's necessary to call countVecTransform() inside MultinomialNaiveBaysen() function.
 """
@@ -185,9 +177,3 @@ LogisticReg_predict = model.predict(tfidf_transformation_test)
 print("Accuracy on the test set LOGISTIC REGRESSION",round(accuracy_score(y_test, LogisticReg_predict)*100,2))
 print(classification_report(y_test, LogisticReg_predict))
 print("it took", time.time()-t)
-
-
-
-
-
-
