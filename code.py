@@ -186,7 +186,7 @@ RF_predict = RandomForest(x_train_tfidf, y_train, x_test_tfidf,
                           criterion='entropy',
                           max_features='sqrt',
                           max_depth=500,
-                          n_jobs=3)
+                          n_jobs=1)
 print("Accuracy on the test set Random Forest",round(accuracy_score(y_test, RF_predict)*100,2))
 print(classification_report(y_test, RF_predict))
 print("It took", round(time.time()-t, 2), "seconds.")
