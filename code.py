@@ -5,6 +5,7 @@ May 2 2018
 
 import nltk
 import pandas as pd
+import numpy as np
 import time
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
@@ -91,7 +92,7 @@ def LinearSVM(x_train, y_train, x_test, penalty=1):
     y_train: Labels to learn.
     x_test: Evaluation on the test set.
     penalty: Penalty (C) value.
-    
+
     returns:
     Predictions on the test set.
     '''
@@ -106,16 +107,16 @@ def LogisticReg(x_train, y_train, x_test):
     prediction = model.predict(x_test)
     return prediction
 
-def RandomForest(x_train, y_train, x_test, 
-                 n_estimators, 
-                 criterion, 
-                 max_features, 
-                 max_depth, 
+def RandomForest(x_train, y_train, x_test,
+                 n_estimators,
+                 criterion,
+                 max_features,
+                 max_depth,
                  n_jobs):
     """
     params:
     See http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
-    
+
     returns:
     Predictions on the test set.
     """
@@ -126,7 +127,7 @@ def RandomForest(x_train, y_train, x_test,
                                             n_jobs=n_jobs)
     model.fit(x_train, y_train)
     prediction = model.predict(x_test)
-    return(prediction)            
+    return(prediction)
 
 data = getData('train.csv')
 plot = plotInitialData(data)
@@ -140,6 +141,10 @@ tfidf_matrix = tfidfTransform(tf_matrix)
 
 x_train_tf, x_test_tf, y_train, y_test = splitData(tf_matrix, encoded_data['author'])
 x_train_tfidf, x_test_tfidf, _, _= splitData(tfidf_matrix, encoded_data['author'])
+
+print("Example!")
+print(np.shape(x_train_tfidf))
+print(x_train_tfidf)
 
 print("\n################ Multinomial Naive Baysen ################ ")
 # Prediction on train
@@ -182,7 +187,7 @@ print("It took", round(time.time()-t, 2), "seconds.")
 print("\n##################### Random Forest ####################### ")
 t = time.time()
 RF_predict = RandomForest(x_train_tfidf, y_train, x_test_tfidf,
-                          n_estimators=500, 
+                          n_estimators=500,
                           criterion='entropy',
                           max_features='sqrt',
                           max_depth=500,
@@ -190,17 +195,3 @@ RF_predict = RandomForest(x_train_tfidf, y_train, x_test_tfidf,
 print("Accuracy on the test set Random Forest",round(accuracy_score(y_test, RF_predict)*100,2))
 print(classification_report(y_test, RF_predict))
 print("It took", round(time.time()-t, 2), "seconds.")
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
