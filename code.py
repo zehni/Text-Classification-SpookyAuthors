@@ -5,7 +5,6 @@ May 2 2018
 
 import nltk
 import pandas as pd
-import numpy as np
 import time
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
@@ -15,6 +14,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score,classification_report
 from sklearn import svm
 from sklearn import linear_model
+from sklearn import ensemble
 
 # Read the data into a data frame
 def getData(path):
@@ -31,16 +31,8 @@ def getUniqueAuthors(data):
     authors = list(set(data['author']))
     return authors
 
-# Plot initial data as bar graph
+# Plot initial data as bar graph.
 def plotInitialData(data):
-    authors = getUniqueAuthors(data)
-    byAuthor = groupbyAuthor(data)
-    plt.figure()
-    plt.bar(authors, byAuthor.count()['text'])
-    plt.show()
-
-# Plot initial data as bar graph. (Now it's working)
-def plotInitialData2(data):
     data.author.value_counts().plot(kind='bar', rot=0)
     plt.show()
 
@@ -51,66 +43,90 @@ def encodeAuthors(data):
     return encoded_data
 
 # Split the data to a train set and a test set
-def splitData(data):
-    x = data['text']
-    y = data['author']
+def splitData(x, labels):
     # Splitting data to 70% Train and 30% Test
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.30, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(x, labels, test_size=0.30, random_state=42)
     return x_train, x_test, y_train, y_test
 
 def stemWords(text):
     return (stemmer.stem(w) for w in analyzer(text))
 
-# Count vectorizer for the train data
-def countVec(x_train):
+# Count vectorizer for the whole data set.
+def countVec(text):
     count_vect = CountVectorizer(stop_words='english',
                                  token_pattern="\w*[a-z]\w*",
                                  max_features=2000,
                                  analyzer=stemWords)
-    x_train_counts = count_vect.fit_transform(x_train)
-
-    return x_train_counts
+    tf_matrix = count_vect.fit_transform(text)
+    return tf_matrix
 
 # TF-IDF values based on the count vectorizer
-def tfidfTransform(x_train_counts):
+def tfidfTransform(matrix):
     tfidf_transformer = TfidfTransformer()
-    x_train_tfidf = tfidf_transformer.fit_transform(x_train_counts)
-    return x_train_tfidf
-
-# Transform the data to be predicted
-def countvecTransform(train_data, data):
-    count_vect = CountVectorizer()
-    # You need to fit and then transform the test data again
-    # To transform the data to be predicted in the same way
-    fit = count_vect.fit_transform(train_data)
-    transform = count_vect.transform(data)
-    return transform
+    tfidf_matrix = tfidf_transformer.fit_transform(matrix)
+    return tfidf_matrix
 
 # Multinomial Naive Baysen Classifer
-def MultinomialNaiveBaysen(x_train_tfidf, y_train, train_data, data):
+def MultinomialNaiveBaysen(x_train, y_train, x_test):
     '''
     params:
-    x_train_tfidf: TF-IDF values of the train data
-    y_train: Labels of the train data
-    data: The x of the data to be predicted
+    x_train: Matrix of TF or TFIDF values for training set.
+    y_train: Labels to learn.
+    x_test: Evaluation on the test set.
 
     returns:
-    prediction
+    Predictions on the test set.
     '''
-    model = MultinomialNB().fit(x_train_tfidf, y_train)
-    transform = countvecTransform(train_data, data)
+    model = MultinomialNB().fit(x_train, y_train)
     # Predict the authors of the sentences
-    prediction = model.predict(transform)
+    prediction = model.predict(x_test)
     return prediction
 
 # Linear Suport Vector Machine Classifer
 # Penality by default is 1
-def LinearSVM(x_train_tfidf, x_train, y_train, x_test, penality=1):
-    model = svm.LinearSVC(C=penality)
-    model.fit(X_train_tfidf, y_train)
-    X_test_transform = countvecTransform(X_train, X_test)
-    prediction= model.predict(X_test_transform)
+def LinearSVM(x_train, y_train, x_test, penalty=1):
+    '''
+    params:
+    x_train: Matrix of TF or TFIDF values for training set.
+    y_train: Labels to learn.
+    x_test: Evaluation on the test set.
+    penalty: Penalty (C) value.
+    
+    returns:
+    Predictions on the test set.
+    '''
+    model = svm.LinearSVC(C=penalty)
+    model.fit(x_train, y_train)
+    prediction = model.predict(x_test)
     return prediction
+
+def LogisticReg(x_train, y_train, x_test):
+    model = linear_model.LogisticRegression()
+    model.fit(x_train, y_train)
+    prediction = model.predict(x_test)
+    return prediction
+
+def RandomForest(x_train, y_train, x_test, 
+                 n_estimators, 
+                 criterion, 
+                 max_features, 
+                 max_depth, 
+                 n_jobs):
+    """
+    params:
+    See http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
+    
+    returns:
+    Predictions on the test set.
+    """
+    model = ensemble.RandomForestClassifier(n_estimators=n_estimators,
+                                            criterion=criterion,
+                                            max_features=max_features,
+                                            max_depth=max_depth,
+                                            n_jobs=n_jobs)
+    model.fit(x_train, y_train)
+    prediction = model.predict(x_test)
+    return(prediction)            
 
 data = getData('train.csv')
 plot = plotInitialData(data)
@@ -119,61 +135,72 @@ analyzer = CountVectorizer().build_analyzer()
 stemmer = nltk.stem.PorterStemmer()
 
 encoded_data = encodeAuthors(data)
-x_train, x_test, y_train, y_test = splitData(encoded_data)
+tf_matrix = countVec(encoded_data['text'])
+tfidf_matrix = tfidfTransform(tf_matrix)
 
-# Adminstration
-count_vectorizer = countVec(x_train)
-tfidf_transformation = tfidfTransform(count_vectorizer)
+x_train_tf, x_test_tf, y_train, y_test = splitData(tf_matrix, encoded_data['author'])
+x_train_tfidf, x_test_tfidf, _, _= splitData(tfidf_matrix, encoded_data['author'])
 
-""" Proposed change. """
-
-"""
-Why not just call countVec() for x_test and transform the test data that way?
-I don't think it's necessary to call countVecTransform() inside MultinomialNaiveBaysen() function.
-"""
-
-# do this instead?
-count_vectorizer_test = countVec(x_test)
-tfidf_transformation_test = tfidfTransform(count_vectorizer_test)
-
-""" """
-
-print("################ Multinomial Naive Baysen ################ ")
+print("\n################ Multinomial Naive Baysen ################ ")
 # Prediction on train
 t = time.time()
-MNB_predict_train = MultinomialNaiveBaysen(tfidf_transformation, y_train, x_train, x_train)
+MNB_predict_train = MultinomialNaiveBaysen(x_train_tfidf, y_train, x_train_tfidf)
 print("Accuracy on the train set ",round(accuracy_score(y_train, MNB_predict_train)*100,2),"%")
 print(classification_report(y_train, MNB_predict_train))
-print("it took", time.time()-t)
+print("It took", round(time.time()-t, 2), "seconds.")
+
 # Prediction on the test
 t = time.time()
-MNB_predict_test = MultinomialNaiveBaysen(tfidf_transformation, y_train, x_train, x_test)
-print("Accuracy on the test set ",round(accuracy_score(y_test, MNB_predict_test)*100,2),"%")
+MNB_predict_test = MultinomialNaiveBaysen(x_train_tfidf, y_train, x_test_tfidf)
+print("Accuracy on the test set",round(accuracy_score(y_test, MNB_predict_test)*100,2),"%")
 print(classification_report(y_test, MNB_predict_test))
-print("it took", time.time()-t)
+print("It took", round(time.time()-t, 2), "seconds.")
 
-print("################ Linear Support Vector Machine Classifer ################ ")
-print("## Penality = 1")
+print("\n################ Linear Support Vector Machine Classifer ################ ")
+print("## Penalty = 1")
 t = time.time()
-LinearSVM_predict = LinearSVM(tfidf_transformation, x_train, y_train, x_test)
+LinearSVM_predict = LinearSVM(x_train_tfidf, y_train, x_test_tfidf, penalty=1)
+print("Accuracy on the test set LINEAR SVM",round(accuracy_score(y_test, LinearSVM_predict)*100,2), "%")
+print(classification_report(y_test, LinearSVM_predict))
+print("It took", round(time.time()-t, 2), "seconds.")
+
+print("\n################ Linear Support Vector Machine Classifer ################ ")
+print("## Penalty = 0.5")
+t = time.time()
+LinearSVM_predict = LinearSVM(x_train_tfidf, y_train, x_test_tfidf, penalty=0.5)
 print("Accuracy on the test set LINEAR SVM",round(accuracy_score(y_test, LinearSVM_predict)*100,2))
 print(classification_report(y_test, LinearSVM_predict))
-print("it took", time.time()-t)
+print("It took", round(time.time()-t, 2), "seconds.")
 
-
-print("################ Linear Support Vector Machine Classifer ################ ")
-print("## Penality = 0.5")
+print("\n##################### Logistic Regression ####################### ")
 t = time.time()
-LinearSVM_predict = LinearSVM(tfidf_transformation, x_train, y_train, x_test, 0.5)
-print("Accuracy on the test set LINEAR SVM",round(accuracy_score(y_test, LinearSVM_predict)*100,2))
-print(classification_report(y_test, LinearSVM_predict))
-print("it took", time.time()-t)
+LogReg_predict = LogisticReg(x_train_tfidf, y_train, x_test_tfidf)
+print("Accuracy on the test set Logistic Regression",round(accuracy_score(y_test, LogReg_predict)*100,2))
+print(classification_report(y_test, LogReg_predict))
+print("It took", round(time.time()-t, 2), "seconds.")
 
-print("################ Logistic Regression ################ ")
+print("\n##################### Random Forest ####################### ")
 t = time.time()
-model = linear_model.LogisticRegression()
-model.fit(tfidf_transformation, y_train)
-LogisticReg_predict = model.predict(tfidf_transformation_test)
-print("Accuracy on the test set LOGISTIC REGRESSION",round(accuracy_score(y_test, LogisticReg_predict)*100,2))
-print(classification_report(y_test, LogisticReg_predict))
-print("it took", time.time()-t)
+RF_predict = RandomForest(x_train_tfidf, y_train, x_test_tfidf,
+                          n_estimators=500, 
+                          criterion='entropy',
+                          max_features='sqrt',
+                          max_depth=500,
+                          n_jobs=3)
+print("Accuracy on the test set Random Forest",round(accuracy_score(y_test, RF_predict)*100,2))
+print(classification_report(y_test, RF_predict))
+print("It took", round(time.time()-t, 2), "seconds.")
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
