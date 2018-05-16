@@ -129,69 +129,76 @@ def RandomForest(x_train, y_train, x_test,
     prediction = model.predict(x_test)
     return(prediction)
 
-data = getData('train.csv')
-plot = plotInitialData(data)
+if __name__ == 'main':
+    
+    data = getData('train.csv')
+    plot = plotInitialData(data)
+    
+    analyzer = CountVectorizer().build_analyzer()
+    stemmer = nltk.stem.PorterStemmer()
+    
+    encoded_data = encodeAuthors(data)
+    tf_matrix = countVec(encoded_data['text'])
+    tfidf_matrix = tfidfTransform(tf_matrix)
+    
+    x_train_tf, x_test_tf, y_train, y_test = splitData(tf_matrix, encoded_data['author'])
+    x_train_tfidf, x_test_tfidf, _, _= splitData(tfidf_matrix, encoded_data['author'])
+    
+    print("Example!")
+    print(np.shape(x_train_tfidf))
+    print(x_train_tfidf)
+    
+    print("\n################ Multinomial Naive Baysen ################ ")
+    # Prediction on train
+    t = time.time()
+    MNB_predict_train = MultinomialNaiveBaysen(x_train_tfidf, y_train, x_train_tfidf)
+    print("Accuracy on the train set ",round(accuracy_score(y_train, MNB_predict_train)*100,2),"%")
+    print(classification_report(y_train, MNB_predict_train))
+    print("It took", round(time.time()-t, 2), "seconds.")
+    
+    # Prediction on the test
+    t = time.time()
+    MNB_predict_test = MultinomialNaiveBaysen(x_train_tfidf, y_train, x_test_tfidf)
+    print("Accuracy on the test set",round(accuracy_score(y_test, MNB_predict_test)*100,2),"%")
+    print(classification_report(y_test, MNB_predict_test))
+    print("It took", round(time.time()-t, 2), "seconds.")
+    
+    print("\n################ Linear Support Vector Machine Classifer ################ ")
+    print("## Penalty = 1")
+    t = time.time()
+    LinearSVM_predict = LinearSVM(x_train_tfidf, y_train, x_test_tfidf, penalty=1)
+    print("Accuracy on the test set LINEAR SVM",round(accuracy_score(y_test, LinearSVM_predict)*100,2), "%")
+    print(classification_report(y_test, LinearSVM_predict))
+    print("It took", round(time.time()-t, 2), "seconds.")
+    
+    print("\n################ Linear Support Vector Machine Classifer ################ ")
+    print("## Penalty = 0.5")
+    t = time.time()
+    LinearSVM_predict = LinearSVM(x_train_tfidf, y_train, x_test_tfidf, penalty=0.5)
+    print("Accuracy on the test set LINEAR SVM",round(accuracy_score(y_test, LinearSVM_predict)*100,2))
+    print(classification_report(y_test, LinearSVM_predict))
+    print("It took", round(time.time()-t, 2), "seconds.")
+    
+    print("\n##################### Logistic Regression ####################### ")
+    t = time.time()
+    LogReg_predict = LogisticReg(x_train_tfidf, y_train, x_test_tfidf)
+    print("Accuracy on the test set Logistic Regression",round(accuracy_score(y_test, LogReg_predict)*100,2))
+    print(classification_report(y_test, LogReg_predict))
+    print("It took", round(time.time()-t, 2), "seconds.")
+    
+    print("\n##################### Random Forest ####################### ")
+    t = time.time()
+    RF_predict = RandomForest(x_train_tfidf, y_train, x_test_tfidf,
+                              n_estimators=500,
+                              criterion='entropy',
+                              max_features='sqrt',
+                              max_depth=500,
+                              n_jobs=1)
+    print("Accuracy on the test set Random Forest",round(accuracy_score(y_test, RF_predict)*100,2))
+    print(classification_report(y_test, RF_predict))
+    print("It took", round(time.time()-t, 2), "seconds.")
 
-analyzer = CountVectorizer().build_analyzer()
-stemmer = nltk.stem.PorterStemmer()
 
-encoded_data = encodeAuthors(data)
-tf_matrix = countVec(encoded_data['text'])
-tfidf_matrix = tfidfTransform(tf_matrix)
 
-x_train_tf, x_test_tf, y_train, y_test = splitData(tf_matrix, encoded_data['author'])
-x_train_tfidf, x_test_tfidf, _, _= splitData(tfidf_matrix, encoded_data['author'])
 
-print("Example!")
-print(np.shape(x_train_tfidf))
-print(x_train_tfidf)
 
-print("\n################ Multinomial Naive Baysen ################ ")
-# Prediction on train
-t = time.time()
-MNB_predict_train = MultinomialNaiveBaysen(x_train_tfidf, y_train, x_train_tfidf)
-print("Accuracy on the train set ",round(accuracy_score(y_train, MNB_predict_train)*100,2),"%")
-print(classification_report(y_train, MNB_predict_train))
-print("It took", round(time.time()-t, 2), "seconds.")
-
-# Prediction on the test
-t = time.time()
-MNB_predict_test = MultinomialNaiveBaysen(x_train_tfidf, y_train, x_test_tfidf)
-print("Accuracy on the test set",round(accuracy_score(y_test, MNB_predict_test)*100,2),"%")
-print(classification_report(y_test, MNB_predict_test))
-print("It took", round(time.time()-t, 2), "seconds.")
-
-print("\n################ Linear Support Vector Machine Classifer ################ ")
-print("## Penalty = 1")
-t = time.time()
-LinearSVM_predict = LinearSVM(x_train_tfidf, y_train, x_test_tfidf, penalty=1)
-print("Accuracy on the test set LINEAR SVM",round(accuracy_score(y_test, LinearSVM_predict)*100,2), "%")
-print(classification_report(y_test, LinearSVM_predict))
-print("It took", round(time.time()-t, 2), "seconds.")
-
-print("\n################ Linear Support Vector Machine Classifer ################ ")
-print("## Penalty = 0.5")
-t = time.time()
-LinearSVM_predict = LinearSVM(x_train_tfidf, y_train, x_test_tfidf, penalty=0.5)
-print("Accuracy on the test set LINEAR SVM",round(accuracy_score(y_test, LinearSVM_predict)*100,2))
-print(classification_report(y_test, LinearSVM_predict))
-print("It took", round(time.time()-t, 2), "seconds.")
-
-print("\n##################### Logistic Regression ####################### ")
-t = time.time()
-LogReg_predict = LogisticReg(x_train_tfidf, y_train, x_test_tfidf)
-print("Accuracy on the test set Logistic Regression",round(accuracy_score(y_test, LogReg_predict)*100,2))
-print(classification_report(y_test, LogReg_predict))
-print("It took", round(time.time()-t, 2), "seconds.")
-
-print("\n##################### Random Forest ####################### ")
-t = time.time()
-RF_predict = RandomForest(x_train_tfidf, y_train, x_test_tfidf,
-                          n_estimators=500,
-                          criterion='entropy',
-                          max_features='sqrt',
-                          max_depth=500,
-                          n_jobs=1)
-print("Accuracy on the test set Random Forest",round(accuracy_score(y_test, RF_predict)*100,2))
-print(classification_report(y_test, RF_predict))
-print("It took", round(time.time()-t, 2), "seconds.")
