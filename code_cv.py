@@ -49,7 +49,7 @@ def stemWords(text):
 def countVec(text):
     count_vect = CountVectorizer(stop_words='english',
                                  token_pattern="\w*[a-z]\w*",
-                                 max_features=2000,
+                                 max_features=6000,
                                  analyzer=stemWords)
     tf_matrix = count_vect.fit_transform(text)
     return tf_matrix
@@ -70,20 +70,22 @@ encoded_data = encodeAuthors(data)
 tf_matrix = countVec(encoded_data['text'])
 tfidf_matrix = tfidfTransform(tf_matrix)
 
+x_train_tfidf, x_test_tfidf, y_train, y_test = train_test_split(tfidf_matrix, encoded_data['author'], test_size=0.30, random_state=42)
+
 """""""""""""""""""""""""""""""""" CV """""""""""""""""""""""""""""""""
 
 multi_naive_bayes = MultinomialNB()
-multi_naive_bayes_scores = cross_val_score(multi_naive_bayes, tfidf_matrix, encoded_data['author'], cv=5)
+multi_naive_bayes_scores = cross_val_score(multi_naive_bayes, x_train_tfidf, y_train, cv=5)
 multi_naive_bayes_est_error = np.mean(multi_naive_bayes_scores); multi_naive_bayes_est_error
 print("\nMultinomial Naive Bayes. Accuracy: %0.3f (+/- %0.2f)" % (multi_naive_bayes_est_error, multi_naive_bayes_scores.std() * 2))
 
 linear_svm = svm.LinearSVC(C=0.5)
-linear_svm_scores = cross_val_score(linear_svm, tfidf_matrix, encoded_data['author'], cv=5)
+linear_svm_scores = cross_val_score(linear_svm, x_train_tfidf, y_train, cv=5)
 linear_svm_est_error = np.mean(linear_svm_scores); linear_svm_est_error
 print("\nLinear SVM. Accuracy: %0.3f (+/- %0.2f)" % (linear_svm_est_error, linear_svm_scores.std() * 2))
 
 log_reg = linear_model.LogisticRegression()
-log_reg_scores = cross_val_score(log_reg, tfidf_matrix, encoded_data['author'], cv=5)
+log_reg_scores = cross_val_score(log_reg, x_train_tfidf, y_train, cv=5)
 log_reg_est_error = np.mean(log_reg_scores); log_reg_est_error
 print("\nLogistic Regression. Accuracy: %0.3f (+/- %0.2f)" % (log_reg_est_error, log_reg_scores.std() * 2))
 
