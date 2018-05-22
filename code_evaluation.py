@@ -31,7 +31,7 @@ def stemWords(text):
 def countVec(text):
     count_vect = CountVectorizer(stop_words='english',
                                  token_pattern="\w*[a-z]\w*",
-                                 max_features=6000,
+                                 max_features=7000,
                                  analyzer=stemWords)
     tf_matrix = count_vect.fit_transform(text)
     return tf_matrix
@@ -127,9 +127,9 @@ for author in range(3):
     fig, ax = plt.subplots(figsize = (10, 8))
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.plot(fpr_svm[author], tpr_svm[author], label='AUC: %.3f' % auc_svm[author])
-    ax.plot(fpr_nbayes[author], tpr_nbayes[author], label='AUC: %.3f' % auc_nbayes[author])
-    ax.plot(fpr_logreg[author], tpr_logreg[author], label='AUC: %.3f' % auc_logreg[author])
+    ax.plot(fpr_svm[author], tpr_svm[author], label='SVM AUC: %.3f' % auc_svm[author])
+    ax.plot(fpr_nbayes[author], tpr_nbayes[author], label='MNB AUC: %.3f' % auc_nbayes[author])
+    ax.plot(fpr_logreg[author], tpr_logreg[author], label='LR AUC: %.3f' % auc_logreg[author])
     ax.set_title('ROC Curve, Author %s' % writer, fontsize = 18)
     ax.tick_params(labelsize = 14)
     ax.grid(alpha = 0.5)

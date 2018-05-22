@@ -75,19 +75,19 @@ x_train_tfidf, x_test_tfidf, y_train, y_test = train_test_split(tfidf_matrix, en
 """""""""""""""""""""""""""""""""" CV """""""""""""""""""""""""""""""""
 
 multi_naive_bayes = MultinomialNB()
-multi_naive_bayes_scores = cross_val_score(multi_naive_bayes, x_train_tfidf, y_train, cv=5)
-multi_naive_bayes_est_error = np.mean(multi_naive_bayes_scores); multi_naive_bayes_est_error
-print("\nMultinomial Naive Bayes. Accuracy: %0.3f (+/- %0.2f)" % (multi_naive_bayes_est_error, multi_naive_bayes_scores.std() * 2))
+multi_naive_bayes_scores = cross_val_score(multi_naive_bayes, x_train_tfidf, y_train, cv=5, scoring='accuracy')
+multi_naive_bayes_accuracy = np.mean(multi_naive_bayes_scores); multi_naive_bayes_accuracy
+print("\nMultinomial Naive Bayes. Accuracy: %0.3f (+/- %0.2f)" % (multi_naive_bayes_accuracy, multi_naive_bayes_scores.std() * 2))
 
 linear_svm = svm.LinearSVC(C=0.5)
-linear_svm_scores = cross_val_score(linear_svm, x_train_tfidf, y_train, cv=5)
-linear_svm_est_error = np.mean(linear_svm_scores); linear_svm_est_error
-print("\nLinear SVM. Accuracy: %0.3f (+/- %0.2f)" % (linear_svm_est_error, linear_svm_scores.std() * 2))
+linear_svm_scores = cross_val_score(linear_svm, x_train_tfidf, y_train, cv=5, scoring='accuracy')
+linear_svm_accuracy = np.mean(linear_svm_scores); linear_svm_accuracy 
+print("\nLinear SVM. Accuracy: %0.3f (+/- %0.2f)" % (linear_svm_accuracy, linear_svm_scores.std() * 2))
 
 log_reg = linear_model.LogisticRegression()
-log_reg_scores = cross_val_score(log_reg, x_train_tfidf, y_train, cv=5)
-log_reg_est_error = np.mean(log_reg_scores); log_reg_est_error
-print("\nLogistic Regression. Accuracy: %0.3f (+/- %0.2f)" % (log_reg_est_error, log_reg_scores.std() * 2))
+log_reg_scores = cross_val_score(log_reg, x_train_tfidf, y_train, cv=5, scoring='accuracy')
+log_reg_accuracy = np.mean(log_reg_scores); log_reg_accuracy 
+print("\nLogistic Regression. Accuracy: %0.3f (+/- %0.2f)" % (log_reg_accuracy, log_reg_scores.std() * 2))
 
 
 

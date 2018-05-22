@@ -56,7 +56,7 @@ def stemWords(text):
 def countVec(text):
     count_vect = CountVectorizer(stop_words='english',
                                  token_pattern="\w*[a-z]\w*",
-                                 max_features=2000,
+                                 max_features=7000,
                                  analyzer=stemWords)
     tf_matrix = count_vect.fit_transform(text)
     return tf_matrix
