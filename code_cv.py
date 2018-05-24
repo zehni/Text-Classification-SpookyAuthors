@@ -1,12 +1,9 @@
 import nltk
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.naive_bayes import MultinomialNB
-from sklearn import svm
 from sklearn import linear_model
 from sklearn.model_selection import cross_val_score
 
@@ -15,51 +12,14 @@ def getData(path):
     texts = pd.read_csv(path)
     return texts
 
-# Group sentences by the authors
-def groupbyAuthor(data):
-    byAuthor = data.groupby('author')
-    return byAuthor
-
-# Get the unique authors names as a list
-def getUniqueAuthors(data):
-    authors = list(set(data['author']))
-    return authors
-
-# Plot initial data as bar graph.
-def plotInitialData(data):
-    data.author.value_counts().plot(kind='bar', rot=0)
-    plt.show()
-
 # Encode the authots 'EAP': 0, 'HPL': 1, 'MWS': 2
 def encodeAuthors(data):
     data['author'] = data['author'].map({'EAP': 0, 'HPL': 1, 'MWS': 2})
     encoded_data = data
     return encoded_data
 
-# Split the data to a train set and a test set
-def splitData(x, labels):
-    # Splitting data to 70% Train and 30% Test
-    x_train, x_test, y_train, y_test = train_test_split(x, labels, test_size=0.30, random_state=42)
-    return x_train, x_test, y_train, y_test
-
 def stemWords(text):
     return (stemmer.stem(w) for w in analyzer(text))
-
-# Count vectorizer for the whole data set.
-def countVec(text):
-    count_vect = CountVectorizer(stop_words='english',
-                                 token_pattern="\w*[a-z]\w*",
-                                 max_features=7000,
-                                 analyzer=stemWords)
-    tf_matrix = count_vect.fit_transform(text)
-    return tf_matrix
-
-# TF-IDF values based on the count vectorizer
-def tfidfTransform(matrix):
-    tfidf_transformer = TfidfTransformer()
-    tfidf_matrix = tfidf_transformer.fit_transform(matrix)
-    return tfidf_matrix
-
 
 data = getData('train.csv')
 
@@ -67,36 +27,69 @@ analyzer = CountVectorizer().build_analyzer()
 stemmer = nltk.stem.PorterStemmer()
 
 encoded_data = encodeAuthors(data)
-tf_matrix = countVec(encoded_data['text'])
-tfidf_matrix = tfidfTransform(tf_matrix)
 
-x_train_tfidf, x_test_tfidf, y_train, y_test = train_test_split(tfidf_matrix, encoded_data['author'], test_size=0.30, random_state=42)
+count_vect = CountVectorizer(stop_words='english',
+                             token_pattern="\w*[a-z]\w*",
+                             max_features=7000,
+                             analyzer=stemWords)
+tf_matrix = count_vect.fit_transform(encoded_data['text'])
+
+tfidf_transformer = TfidfTransformer()
+tfidf_matrix = tfidf_transformer.fit_transform(tf_matrix)
 
 """""""""""""""""""""""""""""""""" CV """""""""""""""""""""""""""""""""
 
-multi_naive_bayes = MultinomialNB()
-multi_naive_bayes_scores = cross_val_score(multi_naive_bayes, x_train_tfidf, y_train, cv=5, scoring='accuracy')
-multi_naive_bayes_accuracy = np.mean(multi_naive_bayes_scores); multi_naive_bayes_accuracy
-print("\nMultinomial Naive Bayes. Accuracy: %0.3f (+/- %0.2f)" % (multi_naive_bayes_accuracy, multi_naive_bayes_scores.std() * 2))
+#alpha=0.01
+#C=7
 
-linear_svm = svm.LinearSVC(C=0.5)
-linear_svm_scores = cross_val_score(linear_svm, x_train_tfidf, y_train, cv=5, scoring='accuracy')
-linear_svm_accuracy = np.mean(linear_svm_scores); linear_svm_accuracy 
-print("\nLinear SVM. Accuracy: %0.3f (+/- %0.2f)" % (linear_svm_accuracy, linear_svm_scores.std() * 2))
+multi_naive_bayes = MultinomialNB(alpha=0.01)
+multi_naive_bayes_scores = cross_val_score(multi_naive_bayes, tfidf_matrix, encoded_data['author'], cv=5, scoring='neg_log_loss')
+multi_naive_bayes_loss = np.mean(multi_naive_bayes_scores); multi_naive_bayes_loss
+print("\nMultinomial Naive Bayes. Negative Log Loss: %0.3f (+/- %0.2f)" % (-multi_naive_bayes_loss, multi_naive_bayes_scores.std() * 2))
 
-log_reg = linear_model.LogisticRegression()
-log_reg_scores = cross_val_score(log_reg, x_train_tfidf, y_train, cv=5, scoring='accuracy')
-log_reg_accuracy = np.mean(log_reg_scores); log_reg_accuracy 
-print("\nLogistic Regression. Accuracy: %0.3f (+/- %0.2f)" % (log_reg_accuracy, log_reg_scores.std() * 2))
+log_reg = linear_model.LogisticRegression(multi_class='multinomial', solver='newton-cg', max_iter=400, C=7)
+log_reg_scores = cross_val_score(log_reg, tfidf_matrix, encoded_data['author'], cv=5, scoring='neg_log_loss')
+log_reg_loss = np.mean(log_reg_scores); log_reg_loss 
+print("\nLogistic Regression. Negative Log Loss: %0.3f (+/- %0.2f)" % (-log_reg_loss, log_reg_scores.std() * 2))
 
 
+""""""""""""""""""""""""" Fit Models/Submission """""""""""""""""""""""""
+
+test_data = getData('test.csv')
+
+tf_matrix_test = count_vect.transform(test_data['text'])
+tfidf_matrix_test = tfidf_transformer.transform(tf_matrix_test)
+
+# fit models on training set, predict on Kaggle's test set
+
+nbayes = MultinomialNB(alpha=0.01)
+nbayes.fit(tfidf_matrix, encoded_data['author'])
+nbayes_proba_preds = nbayes.predict_proba(tfidf_matrix_test)
+
+logreg = linear_model.LogisticRegression(multi_class='multinomial', solver='newton-cg', max_iter=400, C=6)
+logreg.fit(tfidf_matrix, encoded_data['author'])
+logreg_proba_preds = logreg.predict_proba(tfidf_matrix_test)
 
 
+# pandas dataframe to write it on csv (for MNB)
+nbayes_submission = pd.DataFrame(data=nbayes_proba_preds)
+nbayes_submission['id'] = test_data['id']
+nbayes_submission.columns = ['EAP', 'HPL', 'MWS', 'id']
+nbayes_submission = nbayes_submission[['id', 'EAP', 'HPL', 'MWS']]
+
+# pandas dataframe to write it on csv (for LR)
+logreg_submission = pd.DataFrame(data=logreg_proba_preds)
+logreg_submission['id'] = test_data['id']
+logreg_submission.columns = ['EAP', 'HPL', 'MWS', 'id']
+logreg_submission = logreg_submission[['id', 'EAP', 'HPL', 'MWS']]
 
 
+""""""""""""""""""""""""" Write to CSV """""""""""""""""""""""""""""""""
+""""""""""""""""" Be careful not to overwrite this """""""""""""""""""""
 
-
-
+# put your won working directory
+#nbayes_submission.to_csv("C:/Users/mixal/nbayes_submission3.csv", index=False)
+#logreg_submission.to_csv("C:/Users/mixal/logreg_submission3.csv", index=False)
 
 
 
