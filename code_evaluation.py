@@ -12,6 +12,7 @@ from sklearn import linear_model
 from sklearn import ensemble
 from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import label_binarize
+import pickle
 
 # Read the data into a data frame
 def getData(path):
@@ -97,8 +98,8 @@ for author in range(3):
 # so we have to compute the probability estimates for each class with predict_proba()
 
 nbayes = MultinomialNB()
-nbayes_model = nbayes.fit(x_train_tfidf, y_train)
-nbayes_proba_preds = nbayes_model.predict_proba(x_test_tfidf)
+nbayes.fit(x_train_tfidf, y_train)
+nbayes_proba_preds = nbayes.predict_proba(x_test_tfidf)
 fpr_nbayes, tpr_nbayes, auc_nbayes = ComputeROC(y_test_bin, nbayes_proba_preds)
 
 for author in range(3):
@@ -107,8 +108,8 @@ for author in range(3):
 """"""""""""""""""""""""" Logistic Regression Evaluation """""""""""""""""""""""""""""""
 
 logreg = linear_model.LogisticRegression()
-logreg_model = logreg.fit(x_train_tfidf, y_train)
-logreg_proba_preds = logreg_model.predict_proba(x_test_tfidf)
+logreg.fit(x_train_tfidf, y_train)
+logreg_proba_preds = logreg.predict_proba(x_test_tfidf)
 fpr_logreg, tpr_logreg, auc_logreg = ComputeROC(y_test_bin, logreg_proba_preds)
 
 for author in range(3):
@@ -136,6 +137,22 @@ for author in range(3):
     ax.legend(fontsize=13)
     plt.show()        
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
